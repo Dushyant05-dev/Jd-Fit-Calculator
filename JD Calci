@@ -1,16 +1,53 @@
+// pages/api/fit-score.js
+
+import { Configuration, OpenAIApi } from "openai";
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const { resume, jd } = req.body;
+
+  try {
+    const embeddingRes = await openai.createEmbedding({
+      model: "text-embedding-ada-002",
+      input: [resume, jd],
+    });
+
+    const [resumeVec, jdVec] = embeddingRes.data.data.map((e) => e.embedding);
+
+    const cosineSimilarity = (a, b) => {
+      const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
+      const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+      const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+      return dot / (magA * magB);
+    };
+
+    const similarity = cosineSimilarity(resumeVec, jdVec);
+
+    return res.status(200).json({ score: similarity });
+  } catch (error) {
+    console.error("API Error:", error.response?.data || error.message);
+    return res.status(500).json({ error: "Embedding failed" });
+  }
+}
+
+// components/FitCalculator.jsx
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import * as pdfjsLib from "pdfjs-dist/build/pdf";
-import { Configuration, OpenAIApi } from "openai";
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-const configuration = new Configuration({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export default function FitCalculator() {
   const [resumeText, setResumeText] = useState("");
@@ -61,21 +98,13 @@ export default function FitCalculator() {
 
   const getSemanticScore = async (resume, jd) => {
     try {
-      const embeddingRes = await openai.createEmbedding({
-        model: "text-embedding-ada-002",
-        input: [resume, jd],
+      const res = await fetch("/api/fit-score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume, jd }),
       });
-
-      const [resumeVec, jdVec] = embeddingRes.data.data.map((e) => e.embedding);
-
-      const cosineSimilarity = (a, b) => {
-        const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
-        const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
-        const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-        return dot / (magA * magB);
-      };
-
-      return cosineSimilarity(resumeVec, jdVec);
+      const data = await res.json();
+      return data.score || 0;
     } catch (error) {
       console.error("Embedding error:", error);
       return 0;
