@@ -34,6 +34,7 @@ export default function FitCalculator() {
 
   const handleFileUpload = async (e, setText) => {
     const file = e.target.files[0];
+    if (!file) return;
     if (file.type === "application/pdf") {
       const text = await extractTextFromPdf(file);
       setText(text);
@@ -103,56 +104,78 @@ export default function FitCalculator() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 p-4">
-      <h1 className="text-3xl font-bold text-center mb-6 text-blue-900 drop-shadow">Resume vs JD Fit % Calculator</h1>
-      <div className="grid gap-6 max-w-4xl mx-auto">
-        <Card className="shadow-xl bg-white bg-opacity-80 backdrop-blur rounded-2xl">
-          <CardContent className="p-6">
-            <label className="font-semibold">Upload Resume (Text/PDF):</label>
-            <Input type="file" accept=".txt,.pdf" onChange={(e) => handleFileUpload(e, setResumeText)} />
-            <Textarea className="mt-2" rows={6} value={resumeText} onChange={(e) => setResumeText(e.target.value)} />
-          </CardContent>
-        </Card>
+    <div
+      className="min-h-screen bg-cover bg-center p-4"
+      style={{ backgroundImage: `url('/bg.jpg')` }}
+    >
+      <div className="bg-white bg-opacity-80 backdrop-blur-md rounded-3xl p-6 max-w-4xl mx-auto shadow-2xl">
+        <h1 className="text-4xl font-extrabold text-center mb-8 text-blue-800 drop-shadow-md">
+          Resume vs JD Fit % Calculator
+        </h1>
 
-        <Card className="shadow-xl bg-white bg-opacity-80 backdrop-blur rounded-2xl">
-          <CardContent className="p-6">
-            <label className="font-semibold">Upload JD (Text/PDF):</label>
-            <Input type="file" accept=".txt,.pdf" onChange={(e) => handleFileUpload(e, setJdText)} />
-            <Textarea className="mt-2" rows={6} value={jdText} onChange={(e) => setJdText(e.target.value)} />
-          </CardContent>
-        </Card>
+        <div className="grid gap-6">
+          <Card className="shadow-xl">
+            <CardContent className="p-6">
+              <label className="font-semibold">Upload Resume (Text or PDF):</label>
+              <Input type="file" accept=".txt,.pdf" onChange={(e) => handleFileUpload(e, setResumeText)} />
+              <Textarea
+                className="mt-3"
+                rows={6}
+                placeholder="Or paste your resume text here"
+                value={resumeText}
+                onChange={(e) => setResumeText(e.target.value)}
+              />
+            </CardContent>
+          </Card>
 
-        <div className="text-center">
-          <Button onClick={calculateFit} className="px-6 py-2 text-lg">Calculate Fit %</Button>
+          <Card className="shadow-xl">
+            <CardContent className="p-6">
+              <label className="font-semibold">Upload Job Description (Text or PDF):</label>
+              <Input type="file" accept=".txt,.pdf" onChange={(e) => handleFileUpload(e, setJdText)} />
+              <Textarea
+                className="mt-3"
+                rows={6}
+                placeholder="Or paste JD text here"
+                value={jdText}
+                onChange={(e) => setJdText(e.target.value)}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="text-center">
+            <Button onClick={calculateFit} className="px-8 py-3 text-lg bg-blue-700 hover:bg-blue-800 text-white">
+              Calculate Fit %
+            </Button>
+          </div>
+
+          {fitScore && (
+            <div className="mt-6 text-xl text-center font-semibold">
+              Fit Score: <span className="text-green-600">{fitScore}%</span>
+            </div>
+          )}
+
+          {missingSkills.length > 0 && (
+            <div className="mt-4">
+              <h2 className="text-md font-bold mb-1">❌ Skills Missing from Resume:</h2>
+              <ul className="list-disc list-inside text-sm">
+                {missingSkills.map((skill, i) => (
+                  <li key={i}>{skill}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {jdSkills.length > 0 && (
+            <div className="mt-4">
+              <h2 className="text-md font-bold mb-1">📋 Skills/Requirements from JD:</h2>
+              <ul className="list-disc list-inside text-sm">
+                {jdSkills.map((skill, i) => (
+                  <li key={i}>{skill}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-
-        {fitScore && (
-          <div className="mt-4 text-xl text-center font-semibold">
-            Fit Score: <span className="text-green-600">{fitScore}%</span>
-          </div>
-        )}
-
-        {missingSkills.length > 0 && (
-          <div className="mt-4">
-            <h2 className="text-md font-bold mb-1">❌ Skills Missing from Resume:</h2>
-            <ul className="list-disc list-inside text-sm">
-              {missingSkills.map((skill, i) => (
-                <li key={i}>{skill}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {jdSkills.length > 0 && (
-          <div className="mt-4">
-            <h2 className="text-md font-bold mb-1">📋 Skills/Requirements from JD:</h2>
-            <ul className="list-disc list-inside text-sm">
-              {jdSkills.map((skill, i) => (
-                <li key={i}>{skill}</li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
     </div>
   );
